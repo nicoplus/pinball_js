@@ -3,164 +3,88 @@
 <head>
 	<meta charset="utf-8">
 	<title>game 1</title>
+	<script src='game.js'></script>
+	<script src='utils.js'></script>
+	<script src='block.js'></script>
+	<script src='ball.js'></script>
+	<script src='paddle.js'></script>
 
 </head>
 <body>
 	<canvas id='canvas_id' width="400" height="300" style="border: 1px solid black"></canvas>
+	<br>
+
+	<input type="range" id='range'>
 	<script>
-	var log = console.log.bind(console)
-
-	var imageFromImage = function(path){
-		var image = new Image()
-		image.src = path
-		return image		
-	}
-
-	var Paddle = function(){
-		var o = {
-			image: imageFromImage('paddle.png'),
-			x: 150,
-			y: 250,
-			speed: 10,
-		}
-		o.moveLeft = function(){
-			o.x -= o.speed
-		}
-		o.moveRight = function(){
-			o.x += o.speed
-		}
-		return o
-	}
-
-	var Ball = function(){
-		var o = {
-			image: imageFromImage('ball.png'),
-			x: 150,
-			y: 220,
-			speedx: 5,
-			speedy: 5,
-			fired: false,
-			paused: false,
-		}
-
-		o.fire = function(){
-			o.fired = true
-	
-		}
-
-		o.pause = function() {
-			o.paused = !o.paused
-		}
-
-		o.move = function(canvas){
-			if(o.paused == true) {
-				return
-			}
-			if (o.fired == true){
-				if ( o.x<0 || o.x+o.image.width > canvas.width ){
-					o.speedx *= -1
-				}
-				if (o.y<0 || o.y+o.image.height > canvas.height) {
-					o.speedy *= -1
-				}
-				o.y += o.speedy
-				o.x += o.speedx
-			}
-		}
-		return o
-	}
-
-
-	var Game = function(){
-		var g = {
-			keydowns:{},
-			actions:{},
-		}
-		var canvas = document.querySelector('#canvas_id')
-		var context = canvas.getContext('2d')
-
-		g.canvas = canvas
-		g.context = context
-
-		g.draw_image = function(img_object){
-			g.context.drawImage(img_object.image, img_object.x, img_object.y)
-		}
-
-		window.addEventListener('keydown', function(event){
-			g.keydowns[event.key] = true
-		})
-
-		window.addEventListener('keyup', function(event){
-			g.keydowns[event.key] = false
-		})
-
-		g.register = function(key, callback){
-			g.actions[key] = callback
-		}
-
-
-
-		//timer
-		setInterval(function(){
-			//update
-			var actions = Object.keys(g.actions)
-			for (var i = 0; i < actions.length; i++) {
-				var key = actions[i]
-				if (g.keydowns[key] == true){
-					g.actions[key]()
-				}
-			}
-			g.update()	
-			//clear
-			context.clearRect(0, 0, canvas.width, canvas.height)
-			//draw
-			g.draw()
-
-		}, 1000/30)
-
-		return g
-
-	}
 
 	var _main = function() {
 
+		var blocks = []
+		for (var i = 0; i <= 3; i++) {
+			var b = Block()
+			b.y = 100
+			b.x = i*100 + 10
+			blocks.push(b)
+		}
 		var paddle = Paddle()
-		var game = Game()
+		var game = Game(30)
 		var ball = Ball()
 
+
+
+
 		game.register('a', function(){
-			paddle.moveLeft()
+			paddle.moveLeft(game.canvas)
 		})
 
 		game.register('d', function(){
-			paddle.moveRight()
+			paddle.moveRight(game.canvas)
 		})
 
 		game.register(' ', function(){
 			ball.fire()
 		})
 
-		game.register('b', function(){
-			ball.pause()
-		})
 
 
 		game.update = function(){
+
+			var range = document.querySelector('#range').value
+			game.fps = range
+			log(range)
 			
 			ball.move(game.canvas)
 
+			//判断paddle与ball是否相撞
+			if(imgCollid(paddle, ball) == true){
+				ball.rebound()
+			}
+
+			//判断ball与blocks是否相撞
+			for (var i = 0; i < blocks.length; i++) {
+				if(imgCollid(ball, blocks[i]) && blocks[i].live) {
+					ball.rebound()
+					blocks[i].kill()
+				} 		
+			}
 		}
 
 		game.draw = function(){
-			
+
 			game.draw_image(paddle)
 			game.draw_image(ball)
+			//draw blocks
+			for (var i = 0; i < blocks.length; i++) {
+				if (blocks[i].live) {
+					game.draw_image(blocks[i])
+				}
+			}
 		}
-		
-
 	}
 
 	_main()
+
+
 	</script>
 </body>
 </html>
